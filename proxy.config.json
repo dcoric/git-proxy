@@ -190,8 +190,8 @@
     "enabled": false,
     "port": 2222,
     "hostKey": {
-      "privateKeyPath": "test/.ssh/host_key",
-      "publicKeyPath": "test/.ssh/host_key.pub"
+      "privateKeyPath": ".ssh/host_key",
+      "publicKeyPath": ".ssh/host_key.pub"
     },
     "clone": {
       "serviceToken": {

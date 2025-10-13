@@ -5,6 +5,12 @@
 const { execSync } = require('child_process');
 const { existsSync } = require('fs');
 
+// Skip husky installation in CI or Docker environments
+if (process.env.HUSKY === '0' || process.env.CI === 'true') {
+  global.console.log('Skipping husky installation (HUSKY=0 or CI=true)');
+  process.exit(0);
+}
+
 // ===========
 // File paths.
 // ===========

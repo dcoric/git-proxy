@@ -1,0 +1,83 @@
+# Production deployment with MongoDB and external config
+services:
+  git-proxy:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: git-proxy-prod
+    ports:
+      - '443:8080'
+      - '2222:2222'
+    volumes:
+      # Mount production config (should be created from proxy.config.json template)
+      - /etc/git-proxy/proxy.config.json:/app/proxy.config.json:ro
+      # Persistent data storage
+      - git-proxy-data:/app/data
+      # TLS certificates
+      - /etc/git-proxy/certs:/app/certs:ro
+      # SSH keys
+      - /etc/git-proxy/.ssh:/app/.ssh:ro
+    environment:
+      - NODE_ENV=production
+      - PORT=8080
+    restart: always
+    networks:
+      - git-proxy-network
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  mongodb:
+    image: mongo:7
+    container_name: git-proxy-mongodb-prod
+    volumes:
+      - mongodb-data:/data/db
+      - /etc/git-proxy/mongodb/mongod.conf:/etc/mongod.conf:ro
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGODB_PASSWORD}
+    restart: always
+    networks:
+      - git-proxy-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+volumes:
+  git-proxy-data:
+    driver: local
+  mongodb-data:
+    driver: local
+
+networks:
+  git-proxy-network:
+    driver: bridge
