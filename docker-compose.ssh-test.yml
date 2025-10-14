@@ -1,0 +1,39 @@
+# Docker Compose for isolated SSH testing
+# This setup focuses on testing SSH flow in isolation
+services:
+  git-proxy:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: git-proxy-ssh-test
+    ports:
+      - '8080:8080' # Web UI
+      - '2222:2222' # SSH server
+    volumes:
+      # Use a dedicated test config
+      - ./proxy.config.ssh-test.json:/app/proxy.config.json:ro
+      # Persistent data storage
+      - git-proxy-test-data:/app/data
+      # SSH keys
+      - ./.ssh:/app/.ssh:ro
+      # Optional: TLS certificates
+      - ./certs:/app/certs:ro
+    environment:
+      - NODE_ENV=development
+      - PORT=8080
+      - DEBUG=ssh:*
+    restart: unless-stopped
+    networks:
+      - git-proxy-test
+    # Add helpful labels for identification
+    labels:
+      - 'com.gitproxy.env=ssh-test'
+      - 'com.gitproxy.purpose=SSH flow testing'
+
+volumes:
+  git-proxy-test-data:
+    driver: local
+
+networks:
+  git-proxy-test:
+    driver: bridge

@@ -116,10 +116,10 @@ else
     echo "  TLS cert: certs/cert.pem"
 fi
 
-# Create .env file from example if it doesn't exist
+# Create .env file from template if it doesn't exist
 echo -e "\n${BLUE}Setting up environment variables...${NC}"
-if [ ! -f "$ENV_FILE" ] && [ -f ".env.example" ]; then
-    cp .env.example "$ENV_FILE"
+if [ ! -f "$ENV_FILE" ] && [ -f "env.template" ]; then
+    cp env.template "$ENV_FILE"
 
     # Generate random MongoDB password
     if command -v openssl &> /dev/null; then
@@ -131,13 +131,13 @@ if [ ! -f "$ENV_FILE" ] && [ -f ".env.example" ]; then
         fi
         print_status "Environment file created with secure MongoDB password"
     else
-        cp .env.example "$ENV_FILE"
+        cp env.template "$ENV_FILE"
         print_warning "Environment file created. Please set MONGODB_PASSWORD in $ENV_FILE"
     fi
 elif [ -f "$ENV_FILE" ]; then
     print_warning "Environment file already exists, skipping"
 else
-    print_warning "No .env.example found, skipping environment file creation"
+    print_warning "No env.template found, skipping environment file creation"
 fi
 
 # Display configuration summary

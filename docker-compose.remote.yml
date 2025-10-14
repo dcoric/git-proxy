@@ -1,0 +1,125 @@
+# Production deployment for remote server (git.shur.im)
+# Use with: docker compose -f docker-compose.remote.yml up -d
+services:
+  # Nginx reverse proxy with automatic SSL via Let's Encrypt
+  nginx:
+    image: nginxproxy/nginx-proxy:alpine
+    container_name: git-proxy-nginx
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - nginx-certs:/etc/nginx/certs:ro
+      - nginx-vhost:/etc/nginx/vhost.d
+      - nginx-html:/usr/share/nginx/html
+    networks:
+      - git-proxy-network
+    restart: always
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  # Let's Encrypt companion for automatic SSL
+  nginx-ssl:
+    image: nginxproxy/acme-companion
+    container_name: git-proxy-ssl
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - nginx-certs:/etc/nginx/certs
+      - nginx-vhost:/etc/nginx/vhost.d
+      - nginx-html:/usr/share/nginx/html
+      - acme-state:/etc/acme.sh
+    environment:
+      - DEFAULT_EMAIL=your-email@example.com
+      - NGINX_PROXY_CONTAINER=git-proxy-nginx
+    networks:
+      - git-proxy-network
+    restart: always
+    depends_on:
+      - nginx
+
+  git-proxy:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: git-proxy-remote
+    expose:
+      - '8080'
+    ports:
+      - '2222:2222' # SSH needs direct access
+    volumes:
+      # Production config
+      - ./proxy.config.remote.json:/app/proxy.config.json:ro
+      # Persistent data storage
+      - git-proxy-data:/app/data
+      # SSH keys
+      - ./.ssh:/app/.ssh:ro
+    environment:
+      - NODE_ENV=production
+      - PORT=8080
+      - VIRTUAL_HOST=git.shur.im
+      - VIRTUAL_PORT=8080
+      - LETSENCRYPT_HOST=git.shur.im
+      - LETSENCRYPT_EMAIL=your-email@example.com
+    restart: always
+    networks:
+      - git-proxy-network
+    depends_on:
+      - mongodb
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '5'
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  mongodb:
+    image: mongo:7
+    container_name: git-proxy-mongodb
+    volumes:
+      - mongodb-data:/data/db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGODB_USERNAME:-admin}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGODB_PASSWORD}
+    restart: always
+    networks:
+      - git-proxy-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+volumes:
+  git-proxy-data:
+    driver: local
+  mongodb-data:
+    driver: local
+  nginx-certs:
+    driver: local
+  nginx-vhost:
+    driver: local
+  nginx-html:
+    driver: local
+  acme-state:
+    driver: local
+
+networks:
+  git-proxy-network:
+    driver: bridge

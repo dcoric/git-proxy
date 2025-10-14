@@ -275,5 +275,7 @@ website/.docusaurus
 # Test SSH keys (generated during tests)
 test/keys/
 proxy.config.docker.json
+proxy.config.ssh-test.json
+proxy.config.remote.json
 
 .ssh/
