@@ -33,7 +33,7 @@ services:
       - nginx-html:/usr/share/nginx/html
       - acme-state:/etc/acme.sh
     environment:
-      - DEFAULT_EMAIL=your-email@example.com
+      - DEFAULT_EMAIL=${LETSENCRYPT_EMAIL:-your-email@example.com}
       - NGINX_PROXY_CONTAINER=git-proxy-nginx
     networks:
       - git-proxy-network
@@ -49,7 +49,7 @@ services:
     expose:
       - '8080'
     ports:
-      - '2222:2222' # SSH needs direct access
+      - '22:22' # SSH needs direct access
     volumes:
       # Production config
       - ./proxy.config.remote.json:/app/proxy.config.json:ro
@@ -60,10 +60,10 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=8080
-      - VIRTUAL_HOST=git.shur.im
+      - VIRTUAL_HOST=${DOMAIN:-git.shur.im}
       - VIRTUAL_PORT=8080
-      - LETSENCRYPT_HOST=git.shur.im
-      - LETSENCRYPT_EMAIL=your-email@example.com
+      - LETSENCRYPT_HOST=${DOMAIN:-git.shur.im}
+      - LETSENCRYPT_EMAIL=${LETSENCRYPT_EMAIL:-your-email@example.com}
     restart: always
     networks:
       - git-proxy-network
@@ -95,7 +95,7 @@ services:
     networks:
       - git-proxy-network
     healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      test: echo 'db.runCommand("ping").ok' | mongosh ${MONGODB_HOST:-localhost}:${MONGODB_PORT:-27017}/test --quiet
       interval: 10s
       timeout: 5s
       retries: 5

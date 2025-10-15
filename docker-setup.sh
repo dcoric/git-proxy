@@ -202,7 +202,7 @@ if [ "$start_now" = "y" ] || [ "$start_now" = "Y" ]; then
     echo -e "${BLUE}   Git Proxy is Running!${NC}"
     echo -e "${BLUE}========================================${NC}"
     echo -e "Web UI:       ${GREEN}http://localhost:8080${NC}"
-    echo -e "SSH Server:   ${GREEN}localhost:2222${NC}"
+    echo -e "SSH Server:   ${GREEN}localhost:22${NC} (standard SSH port)"
     echo -e "\nView logs:    ${YELLOW}docker-compose -f $COMPOSE_FILE logs -f${NC}"
     echo -e "Stop:         ${YELLOW}docker-compose -f $COMPOSE_FILE down${NC}"
     echo -e "Restart:      ${YELLOW}docker-compose -f $COMPOSE_FILE restart${NC}"

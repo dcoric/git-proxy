@@ -7,7 +7,7 @@ services:
     container_name: git-proxy-prod
     ports:
       - '443:8080'
-      - '2222:2222'
+      - '22:22'
     volumes:
       # Mount production config (should be created from proxy.config.json template)
       - /etc/git-proxy/proxy.config.json:/app/proxy.config.json:ro
@@ -53,7 +53,7 @@ services:
     networks:
       - git-proxy-network
     healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      test: echo 'db.runCommand("ping").ok' | mongosh ${MONGODB_HOST:-localhost}:${MONGODB_PORT:-27017}/test --quiet
       interval: 10s
       timeout: 5s
       retries: 5

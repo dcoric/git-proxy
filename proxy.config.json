@@ -29,7 +29,7 @@
     },
     {
       "type": "mongo",
-      "connectionString": "mongodb://localhost:27017/gitproxy",
+      "connectionString": "mongodb://${MONGODB_HOST:-localhost}:${MONGODB_PORT:-27017}/${MONGODB_DATABASE:-gitproxy}",
       "options": {
         "useNewUrlParser": true,
         "useUnifiedTopology": true,
@@ -188,7 +188,7 @@
   },
   "ssh": {
     "enabled": false,
-    "port": 2222,
+    "port": 22,
     "hostKey": {
       "privateKeyPath": ".ssh/host_key",
       "publicKeyPath": ".ssh/host_key.pub"

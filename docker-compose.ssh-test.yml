@@ -8,7 +8,7 @@ services:
     container_name: git-proxy-ssh-test
     ports:
       - '8080:8080' # Web UI
-      - '2222:2222' # SSH server
+      - '22:22' # SSH server
     volumes:
       # Use a dedicated test config
       - ./proxy.config.ssh-test.json:/app/proxy.config.json:ro
