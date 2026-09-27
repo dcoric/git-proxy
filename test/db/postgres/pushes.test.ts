@@ -70,7 +70,7 @@ describe('PostgreSQL - Pushes', async () => {
       await getPushes({ id: 'x' } as never);
 
       const [sql, params] = mockQuery.mock.calls[0];
-      expect(sql).not.toContain('WHERE');
+      expect(sql).not.toMatch(/FROM pushes WHERE/);
       expect(params).toEqual([]);
     });
   });
@@ -232,9 +232,14 @@ describe('PostgreSQL - Pushes', async () => {
       const [listSql] = mockQuery.mock.calls[0];
       const [profileSql] = mockQuery.mock.calls[1];
       const [detailSql] = mockQuery.mock.calls[2];
-      expect(listSql).toContain("data - 'steps'");
-      expect(profileSql).toContain("data - 'steps'");
-      expect(detailSql).not.toContain("data - 'steps'");
+      for (const sql of [listSql, profileSql]) {
+        expect(sql).toContain('jsonb_each(data)');
+        expect(sql).toContain("'tagData'");
+        expect(sql).not.toContain("'steps'");
+        expect(sql).not.toContain("'lastStep'");
+        expect(sql).not.toContain("'diff'");
+      }
+      expect(detailSql).toContain('SELECT data FROM pushes');
     });
   });
 
@@ -247,7 +252,7 @@ describe('PostgreSQL - Pushes', async () => {
       const [sql, params] = mockQuery.mock.calls[0];
       expect(sql).toContain("data->'attestation'->'reviewer'->>'username'");
       expect(sql).toMatch(/ORDER BY timestamp DESC/);
-      expect(sql).not.toContain('userEmail');
+      expect(sql).not.toContain("data->>'userEmail'");
       expect(params).toEqual(['Alice']);
     });
 

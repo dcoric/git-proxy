@@ -45,7 +45,6 @@ export const pushListProjection = {
   method: 1,
   project: 1,
   protocol: 1,
-  pusherVerified: 1,
   rejected: 1,
   rejection: 1,
   repo: 1,

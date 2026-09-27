@@ -478,7 +478,6 @@ describe('Push API', () => {
       url: TEST_PUSH.url,
       user: TEST_PUSH.user,
       userEmail: TEST_PUSH.userEmail,
-      pusherVerified: true,
     });
     expect(push).not.toHaveProperty('steps');
     expect(push).not.toHaveProperty('lastStep');

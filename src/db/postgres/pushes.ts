@@ -19,6 +19,7 @@ import { canonicalRemoteUrl } from '../../activity/canonicalRemoteUrl';
 import { Action } from '../../proxy/actions';
 import { CompletedAttestation, Rejection } from '../../proxy/processors/types';
 import { toClass } from '../helper';
+import { pushListProjection } from '../pushProjection';
 import {
   emptyRepoActivityTabCounts,
   PushQuery,
@@ -46,6 +47,15 @@ const FILTER_COLUMNS: Record<string, string> = {
   rejected: 'rejected',
   type: 'type',
 };
+
+// Only compile trusted field names from the shared allowlist into this SQL.
+// Project inside PostgreSQL so large diffs never enter the list response.
+const listFields = Object.entries(pushListProjection)
+  .filter(([, included]) => included === 1)
+  .map(([field]) => `'${field}'`)
+  .join(', ');
+const listData = `(SELECT COALESCE(jsonb_object_agg(key, value), '{}'::jsonb)
+                    FROM jsonb_each(data) WHERE key IN (${listFields}))`;
 
 const rowToAction = (row: { data: unknown }): Action =>
   toClass(row.data, Action.prototype) as Action;
@@ -163,15 +173,14 @@ export const getPushesForUserProfile = async (
   }
 
   const result = await query<{ data: unknown }>(
-    `SELECT data - 'steps' AS data FROM pushes WHERE type = 'push' AND ${predicate} ORDER BY timestamp DESC`,
+    `SELECT ${listData} AS data FROM pushes WHERE type = 'push' AND ${predicate} ORDER BY timestamp DESC`,
     values,
   );
   return result.rows.map(rowToAction);
 };
 
-// List queries drop `steps` from the returned document: it holds the full diff
-// (largest part of a push row) and the mongo backend's list projection excludes
-// it as well. The push-detail path (`getPush`) still returns the whole document.
+// Lists share the metadata contract with NeDB and MongoDB; detail reads retain
+// the complete audit record, including historical diff representations.
 export const getPushes = async (q: Partial<PushQuery> = defaultPushQuery): Promise<Action[]> => {
   const clauses: string[] = [];
   const values: unknown[] = [];
@@ -184,7 +193,7 @@ export const getPushes = async (q: Partial<PushQuery> = defaultPushQuery): Promi
 
   const where = clauses.length > 0 ? `WHERE ${clauses.join(' AND ')}` : '';
   const result = await query<{ data: unknown }>(
-    `SELECT data - 'steps' AS data FROM pushes ${where} ORDER BY timestamp DESC`,
+    `SELECT ${listData} AS data FROM pushes ${where} ORDER BY timestamp DESC`,
     values,
   );
   return result.rows.map(rowToAction);
